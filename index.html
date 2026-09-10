@@ -1,0 +1,2567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>卡通跳跃大冒险</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #72b01d;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", Roboto, sans-serif;
+    }
+    #canvas-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 遮罩通用弹窗 - 柔和暖白磨砂玻璃 */
+    .overlay-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: opacity 0.3s ease;
+      z-index: 10;
+    }
+    .hidden {
+      display: none !important;
+    }
+
+    /* 玩家名牌 */
+    .user-profile-badge {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px solid #fed7aa;
+      border-radius: 20px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #78350f;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(120, 53, 15, 0.08);
+      transition: all 0.2s;
+    }
+    .user-profile-badge:active {
+      transform: scale(0.95);
+    }
+
+    .game-logo {
+      font-size: clamp(2rem, 8vw, 3.2rem);
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 4px 0 #b45309, 0 8px 24px rgba(120, 53, 15, 0.35);
+      margin-bottom: 24px;
+      letter-spacing: 2px;
+      text-align: center;
+      animation: float 2.5s ease-in-out infinite alternate;
+    }
+    @keyframes float {
+      from { transform: translateY(0); }
+      to { transform: translateY(-8px); }
+    }
+
+    .menu-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 224px;
+    }
+
+    /* 按键系统：高级森系暖奶油色阶 */
+    .pixel-btn {
+      position: relative;
+      padding: 12px 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: center;
+      letter-spacing: 1.5px;
+      box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45);
+    }
+    .pixel-btn:active {
+      transform: translateY(3.5px);
+    }
+
+    .btn-start {
+      background: linear-gradient(180deg, #ff7849 0%, #f75525 100%);
+      color: #ffffff;
+      box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45), 0 5px 0 #c2410c, 0 8px 18px rgba(247, 85, 37, 0.35);
+    }
+    .btn-start:active {
+      box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45), 0 1.5px 0 #c2410c, 0 4px 8px rgba(247, 85, 37, 0.35);
+    }
+
+    .btn-rank {
+      background: linear-gradient(180deg, #fb923c 0%, #ea580c 100%);
+      color: #ffffff;
+      box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45), 0 5px 0 #9a3412, 0 8px 16px rgba(234, 88, 12, 0.28);
+    }
+    .btn-rank:active {
+      box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45), 0 5px 0 #9a3412, 0 4px 8px rgba(234, 88, 12, 0.28);
+    }
+
+    .btn-skin {
+      background: linear-gradient(180deg, #fba04b 0%, #ed8936 100%);
+      color: #ffffff;
+      box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45), 0 5px 0 #c05621, 0 8px 16px rgba(237, 137, 54, 0.3);
+    }
+    .btn-skin:active {
+      box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45), 0 1.5px 0 #c05621, 0 4px 8px rgba(237, 137, 54, 0.3);
+    }
+
+    .btn-setting {
+      background: linear-gradient(180deg, #b08968 0%, #9c6644 100%);
+      color: #ffffff;
+      box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45), 0 5px 0 #7f4f24, 0 8px 16px rgba(127, 79, 36, 0.25);
+    }
+    .btn-setting:active {
+      box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45), 0 1.5px 0 #7f4f24, 0 4px 8px rgba(127, 79, 36, 0.25);
+    }
+
+    .btn-quit {
+      background: linear-gradient(180deg, #fdf6ee 0%, #f3e9dc 100%);
+      color: #78350f;
+      box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.8), 0 5px 0 #d5c4b1, 0 8px 16px rgba(120, 53, 15, 0.1);
+    }
+    .btn-quit:active {
+      box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.8), 0 1.5px 0 #d5c4b1, 0 4px 8px rgba(120, 53, 15, 0.1);
+    }
+
+    .modal {
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 22px 24px;
+      box-shadow: 0 20px 45px rgba(120, 53, 15, 0.16);
+      color: #334155;
+      border: 3px solid #fef3c7;
+    }
+    .modal h3 {
+      font-size: 1.35rem;
+      margin-bottom: 14px;
+      text-align: center;
+      color: #78350f;
+      font-weight: 900;
+    }
+
+    /* 登录输入 */
+    .login-input-group {
+      margin: 16px 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-align: left;
+    }
+    .login-label {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #b45309;
+    }
+    .login-input {
+      padding: 12px 16px;
+      border-radius: 16px;
+      border: 2px solid #fed7aa;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #78350f;
+      outline: none;
+      background: #fffbeb;
+    }
+    .login-input:focus {
+      border-color: #f97316;
+    }
+
+    /* 真实网络排行榜 */
+    .rank-modal-box {
+      width: 92%;
+      max-width: 440px;
+      background: linear-gradient(180deg, #ffffff 0%, #fffbeb 100%);
+    }
+    .rank-sync-status {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #16a34a;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .rank-list {
+      max-height: 260px;
+      overflow-y: auto;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 4px;
+    }
+    .rank-empty-state {
+      padding: 36px 0;
+      text-align: center;
+      color: #b45309;
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+    .rank-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: #ffffff;
+      border: 1.5px solid #fde68a;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+    .rank-item.is-me {
+      background: #fff7ed;
+      border-color: #f97316;
+      border-width: 2px;
+    }
+    .rank-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      overflow: hidden;
+    }
+    .rank-pos {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 0.85rem;
+      color: #78350f;
+      background: #fef3c7;
+      flex-shrink: 0;
+    }
+    .rank-pos.top-1 { background: #facc15; color: #78350f; }
+    .rank-pos.top-2 { background: #cbd5e1; color: #334155; }
+    .rank-pos.top-3 { background: #f97316; color: #ffffff; }
+    .rank-name {
+      font-weight: 800;
+      font-size: 0.92rem;
+      color: #78350f;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .rank-score {
+      font-weight: 900;
+      font-size: 1.05rem;
+      color: #ea580c;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+    .my-best-hint {
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #b45309;
+      margin-bottom: 12px;
+    }
+
+    /* 角色更衣室分栏 */
+    .skin-modal-box {
+      width: 94%;
+      max-width: 500px;
+      background: linear-gradient(180deg, #ffffff 0%, #fffbeb 100%);
+    }
+    .skin-layout {
+      display: flex;
+      gap: 14px;
+      align-items: stretch;
+      margin-bottom: 16px;
+    }
+    .skin-left-stage {
+      flex: 1.15;
+      height: 220px;
+      background: radial-gradient(circle, #fef9c3 0%, #ffedd5 100%);
+      border-radius: 22px;
+      border: 3px solid #fed7aa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: inset 0 3px 10px rgba(251, 146, 60, 0.12);
+    }
+    #previewCanvas {
+      display: block;
+    }
+    .stage-pedestal {
+      position: absolute;
+      bottom: 18px;
+      width: 95px;
+      height: 14px;
+      background: rgba(251, 146, 60, 0.22);
+      border-radius: 50%;
+      filter: blur(1px);
+    }
+    .skin-right-list {
+      flex: 1.05;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      justify-content: center;
+    }
+    .skin-card {
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 6px 10px;
+      cursor: pointer;
+      background: #ffffff;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.03);
+    }
+    .skin-card.active {
+      border-color: #f97316;
+      background: #fff7ed;
+      transform: scale(1.02);
+      box-shadow: 0 5px 12px rgba(249, 115, 22, 0.2);
+    }
+    .skin-thumb {
+      width: 40px;
+      height: 40px;
+      display: block;
+      flex-shrink: 0;
+    }
+    .skin-info {
+      text-align: left;
+    }
+    .skin-name {
+      font-weight: 800;
+      font-size: 0.88rem;
+      color: #78350f;
+      display: block;
+    }
+    .skin-desc {
+      font-size: 0.72rem;
+      color: #c2410c;
+      font-weight: 600;
+    }
+
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .setting-select {
+      padding: 5px 8px;
+      border-radius: 8px;
+      border: 1.5px solid #cbd5e1;
+      font-weight: bold;
+      color: #334155;
+      outline: none;
+    }
+    .toggle-checkbox {
+      width: 44px;
+      height: 24px;
+      accent-color: #f97316;
+      cursor: pointer;
+    }
+
+    .hud {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .hud-pill {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(4px);
+      padding: 6px 14px;
+      border-radius: 18px;
+      color: #78350f;
+      font-size: 13px;
+      font-weight: 800;
+      border: 1.5px solid #fed7aa;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    .skill-notice {
+      position: absolute;
+      top: 66px;
+      width: 100%;
+      text-align: center;
+      color: #ffd166;
+      font-weight: 900;
+      font-size: 1.05rem;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="canvas-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="hud">
+      <div class="hud-pill" id="score-tag">🐾 得分: 0</div>
+      <div class="hud-pill" id="jump-tag">🦘 连跳: 2/2</div>
+      <div class="hud-pill" id="diff-tag">☀️ 晴空暖阳</div>
+    </div>
+    <div class="skill-notice" id="skill-notice">✨ 获得护盾！</div>
+
+    <!-- 首屏主菜单 -->
+    <div class="overlay-screen" id="menu-screen">
+      <!-- 玩家独立名牌 -->
+      <div class="user-profile-badge" id="btn-user-badge">
+        <span>👤</span>
+        <span id="display-username">冒险家</span>
+      </div>
+
+      <div class="game-logo" id="main-title">呆萌萝卜大冒险</div>
+      <div class="menu-box">
+        <button class="pixel-btn btn-start" id="btn-start-game">开始冒险</button>
+        <button class="pixel-btn btn-rank" id="btn-open-rank">英雄榜单</button>
+        <button class="pixel-btn btn-skin" id="btn-open-skin">角色换肤</button>
+        <button class="pixel-btn btn-setting" id="btn-open-setting">游戏设置</button>
+        <button class="pixel-btn btn-quit" id="btn-quit-game">退出游戏</button>
+      </div>
+    </div>
+
+    <!-- 真实账号登录/修改昵称 -->
+    <div class="overlay-screen hidden" id="login-screen">
+      <div class="modal" style="max-width: 330px; width: 88%;">
+        <h3>专属账号设定</h3>
+        <div class="login-input-group">
+          <label class="login-label">输入你的真实玩家昵称：</label>
+          <input type="text" id="username-input" class="login-input" maxlength="10" placeholder="例如：跳跳达人">
+        </div>
+        <button class="pixel-btn btn-start" style="width:100%;" id="btn-save-username">确认保存</button>
+      </div>
+    </div>
+
+    <!-- 真实在线排行榜 -->
+    <div class="overlay-screen hidden" id="rank-screen">
+      <div class="modal rank-modal-box">
+        <h3>🏆 真实玩家天梯榜</h3>
+        <div class="rank-sync-status" id="rank-sync-tag">🟢 正在拉取全网实时数据...</div>
+        <div class="rank-list" id="rank-list-container">
+          <!-- 动态注入全网玩家真实成绩 -->
+        </div>
+        <div class="my-best-hint" id="my-best-record">我的最佳成绩：0 分</div>
+        <button class="pixel-btn btn-start" style="width:100%;" id="btn-close-rank">确定返回</button>
+      </div>
+    </div>
+
+    <!-- 角色换肤弹窗 -->
+    <div class="overlay-screen hidden" id="skin-screen">
+      <div class="modal skin-modal-box">
+        <h3>挑选冒险装扮</h3>
+
+        <div class="skin-layout">
+          <div class="skin-left-stage">
+            <canvas id="previewCanvas" width="180" height="185"></canvas>
+            <div class="stage-pedestal"></div>
+          </div>
+
+          <div class="skin-right-list">
+            <div class="skin-card active" data-skin="carrot">
+              <canvas id="carrotThumbCanvas" class="skin-thumb" width="40" height="40"></canvas>
+              <div class="skin-info">
+                <span class="skin-name">呆萌胡萝卜</span>
+                <span class="skin-desc">天真烂漫</span>
+              </div>
+            </div>
+
+            <div class="skin-card" data-skin="poop">
+              <canvas id="poopThumbCanvas" class="skin-thumb" width="40" height="40"></canvas>
+              <div class="skin-info">
+                <span class="skin-name">便便国王</span>
+                <span class="skin-desc">软萌弹力</span>
+              </div>
+            </div>
+
+            <div class="skin-card" data-skin="cat">
+              <canvas id="catThumbCanvas" class="skin-thumb" width="40" height="40"></canvas>
+              <div class="skin-info">
+                <span class="skin-name">经典暖猫</span>
+                <span class="skin-desc">轻盈机敏</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="pixel-btn btn-start" style="width:100%;" id="btn-close-skin">确认装扮</button>
+      </div>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div class="overlay-screen hidden" id="setting-screen">
+      <div class="modal" style="max-width: 350px; width: 90%;">
+        <h3>游戏设置</h3>
+        <div class="setting-item">
+          <span>天气场景模式</span>
+          <select id="weather-mode" class="setting-select">
+            <option value="auto" selected>自动渐变轮播</option>
+            <option value="sunny">晴空暖阳</option>
+            <option value="rainy">细雨蒙蒙</option>
+            <option value="snowy">冰雪世界</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <span>背景音乐 (BGM)</span>
+          <input type="checkbox" id="toggle-bgm" class="toggle-checkbox" checked>
+        </div>
+        <div class="setting-item">
+          <span>动作跳跃音效</span>
+          <input type="checkbox" id="toggle-sfx" class="toggle-checkbox" checked>
+        </div>
+        <div class="setting-item">
+          <span>跳跃音效风格</span>
+          <select id="jump-sfx-style" class="setting-select">
+            <option value="retro">经典 8-Bit</option>
+            <option value="cute" selected>萌趣泡泡</option>
+            <option value="arcade">清脆街机</option>
+          </select>
+        </div>
+        <button class="pixel-btn btn-start" style="width:100%; margin-top:8px;" id="btn-close-setting">确定返回</button>
+      </div>
+    </div>
+
+    <!-- 结算画面 -->
+    <div class="overlay-screen hidden" id="gameover-screen">
+      <div class="game-logo" style="color: #ef4444; text-shadow:0 4px 0 #991b1b;">冒险结束！</div>
+      <p style="color:#ffffff; font-size:1.25rem; font-weight:700; margin-bottom: 22px; text-shadow:0 2px 8px rgba(0,0,0,0.3);" id="final-score">得分: 0</p>
+      <div class="menu-box">
+        <button class="pixel-btn btn-start" id="btn-restart">再战一次</button>
+        <button class="pixel-btn btn-quit" id="btn-back-menu">返回主页</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================================
+    // 0. 真实多玩家在线数据库引擎 (KVDB.io 纯真实数据，无虚拟假数据)
+    // ==========================================================
+    const RealOnlineRank = {
+      // 专用公共云存储 Bucket
+      BUCKET_URL: 'https://kvdb.io/AW53u6vT9t93242ZtV7D1h/real_leaderboard_data',
+
+      // 获取唯一设备账号标识
+      getPlayerId() {
+        let id = localStorage.getItem('player_unique_id');
+        if (!id) {
+          id = 'p_' + Math.random().toString(36).substr(2, 9);
+          localStorage.setItem('player_unique_id', id);
+        }
+        return id;
+      },
+
+      getPlayerName() {
+        let name = localStorage.getItem('player_nickname');
+        if (!name) {
+          name = '玩家' + Math.floor(Math.random() * 8999 + 1000);
+          localStorage.setItem('player_nickname', name);
+        }
+        return name;
+      },
+
+      setPlayerName(newName) {
+        const clean = newName.trim() || this.getPlayerName();
+        localStorage.setItem('player_nickname', clean);
+        document.getElementById('display-username').textContent = clean;
+        return clean;
+      },
+
+      getMyBest() {
+        return parseInt(localStorage.getItem('my_highest_score')) || 0;
+      },
+
+      // 从云端实时获取纯真实玩家数据
+      async getOnlineList() {
+        try {
+          const res = await fetch(this.BUCKET_URL + '?t=' + Date.now(), { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              return data;
+            }
+          }
+        } catch (e) {
+          console.warn('云端实时连接中...', e);
+        }
+        return [];
+      },
+
+      // 实时上传本人真实成绩
+      async uploadScore(score) {
+        const myBest = Math.max(score, this.getMyBest());
+        localStorage.setItem('my_highest_score', myBest);
+
+        const myId = this.getPlayerId();
+        const myName = this.getPlayerName();
+
+        try {
+          let list = await this.getOnlineList();
+
+          // 依据唯一 ID 更新玩家真实战绩
+          const idx = list.findIndex(item => item.id === myId);
+          if (idx !== -1) {
+            list[idx].name = myName;
+            list[idx].score = Math.max(list[idx].score, myBest);
+          } else {
+            list.push({ id: myId, name: myName, score: myBest });
+          }
+
+          // 仅按纯真实分数倒序排序
+          list.sort((a, b) => b.score - a.score);
+          list = list.slice(0, 30); // 保留全网排名前 30 位真实玩家
+
+          // 写入远端云数据库
+          await fetch(this.BUCKET_URL, {
+            method: 'POST',
+            body: JSON.stringify(list)
+          });
+          return list;
+        } catch (err) {
+          console.error('分数上传网络波动', err);
+        }
+      }
+    };
+
+    // ==========================================
+    // 1. 音频合成引擎
+    // ==========================================
+    const Sound = {
+      ctx: null,
+      bgmEnabled: true,
+      sfxEnabled: true,
+      jumpStyle: 'cute',
+      bgmTimer: null,
+      bgmStep: 0,
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      },
+      playJump(isDouble = false) {
+        if (!this.sfxEnabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        if (this.jumpStyle === 'retro') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(isDouble ? 340 : 220, now);
+          osc.frequency.exponentialRampToValueAtTime(isDouble ? 700 : 540, now + 0.12);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+        } else if (this.jumpStyle === 'cute') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(isDouble ? 480 : 320, now);
+          osc.frequency.exponentialRampToValueAtTime(isDouble ? 960 : 750, now + 0.14);
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.14);
+        } else {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(isDouble ? 660 : 440, now);
+          osc.frequency.linearRampToValueAtTime(isDouble ? 1100 : 880, now + 0.1);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+        }
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.14);
+      },
+      playStomp() {
+        if (!this.sfxEnabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(450, now);
+        osc.frequency.setValueAtTime(900, now + 0.05);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      },
+      playLand() {
+        if (!this.sfxEnabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.linearRampToValueAtTime(100, now + 0.06);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.06);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      },
+      playCoin() {
+        if (!this.sfxEnabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(987, now);
+        osc.frequency.setValueAtTime(1318, now + 0.07);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      },
+      playHit() {
+        if (!this.sfxEnabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(50, now + 0.28);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.28);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.28);
+      },
+      startBGM() {
+        if (this.bgmTimer) return;
+        const melody = [
+          261.63, 0, 329.63, 392.00, 523.25, 392.00, 329.63, 0,
+          293.66, 0, 349.23, 440.00, 587.33, 440.00, 349.23, 0,
+          261.63, 329.63, 392.00, 523.25, 440.00, 392.00, 349.23, 329.63,
+          293.66, 0, 392.00, 0, 261.63, 0, 0, 0
+        ];
+        this.bgmStep = 0;
+        this.bgmTimer = setInterval(() => {
+          if (!this.bgmEnabled || !this.ctx) return;
+          const note = melody[this.bgmStep % melody.length];
+          this.bgmStep++;
+          if (note > 0) {
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(note, now);
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.15);
+          }
+        }, 175);
+      },
+      stopBGM() {
+        if (this.bgmTimer) {
+          clearInterval(this.bgmTimer);
+          this.bgmTimer = null;
+        }
+      }
+    };
+
+    // ==========================================
+    // 2. 画布适配
+    // ==========================================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let W = 0, H = 0, GROUND_Y = 0;
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W;
+      canvas.height = H;
+      GROUND_Y = H * 0.74;
+      if (player) player.resetPos();
+    }
+
+    // ==========================================
+    // 3. 角色绘制引擎 (无黑边柔和分层)
+    // ==========================================
+    const CharacterDrawer = {
+      drawCarrot(c, cx, cy, baseSize, blinkTimer, bounceState = { sx: 1, sy: 1, tilt: 0 }) {
+        c.save();
+        c.translate(cx, cy);
+
+        c.rotate(bounceState.tilt || 0);
+        c.scale(bounceState.sx || 1, bounceState.sy || 1);
+
+        const s = baseSize / 52;
+        const colorCarrotBody = '#f59e0b';
+        const colorCarrotShadow = '#d97706';
+        const colorCarrotHighlight = '#fbbf24';
+        const colorLeafBase = '#84cc16';
+        const colorLeafHighlight = '#bef264';
+        const colorLeafShadow = '#65a30d';
+        const eyePupilDark = '#3f2c1d';
+        const eyeAqua = '#6ee7b7';
+
+        const leafBounce = (bounceState.sy > 1) ? -1.5 * s : 0.8 * s;
+        c.save();
+        c.translate(0, -18 * s + leafBounce);
+
+        c.fillStyle = colorLeafShadow;
+        c.beginPath();
+        c.ellipse(0, -3 * s, 12 * s, 8.5 * s, 0, 0, Math.PI * 2);
+        c.ellipse(-12 * s, 0, 10 * s, 7 * s, -0.3, 0, Math.PI * 2);
+        c.ellipse(12 * s, 0, 10 * s, 7 * s, 0.3, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = colorLeafBase;
+        c.beginPath();
+        c.ellipse(0, -5 * s, 11 * s, 8 * s, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = colorLeafHighlight;
+        c.beginPath();
+        c.ellipse(-1 * s, -6.5 * s, 8 * s, 5 * s, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = colorLeafBase;
+        c.beginPath();
+        c.ellipse(-12 * s, -1 * s, 9.5 * s, 6.5 * s, -0.3, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = colorLeafHighlight;
+        c.beginPath();
+        c.ellipse(-12 * s, -2.5 * s, 7 * s, 4.5 * s, -0.3, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = colorLeafBase;
+        c.beginPath();
+        c.ellipse(12 * s, -1 * s, 9.5 * s, 6.5 * s, 0.3, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = colorLeafHighlight;
+        c.beginPath();
+        c.ellipse(12 * s, -2.5 * s, 7 * s, 4.5 * s, 0.3, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+
+        c.fillStyle = colorCarrotShadow;
+        c.beginPath();
+        c.moveTo(-18 * s, -1 * s); c.lineTo(-27 * s, 3.5 * s); c.lineTo(-17 * s, 8.5 * s);
+        c.closePath();
+        c.fill();
+
+        c.beginPath();
+        c.moveTo(18 * s, -1 * s); c.lineTo(27 * s, 3.5 * s); c.lineTo(17 * s, 8.5 * s);
+        c.closePath();
+        c.fill();
+
+        c.fillStyle = colorCarrotShadow;
+        c.beginPath();
+        c.moveTo(-19.5 * s, -10 * s);
+        c.bezierCurveTo(-24.5 * s, 5 * s, -14.5 * s, 23 * s, 0, 25 * s);
+        c.bezierCurveTo(14.5 * s, 23 * s, 24.5 * s, 5 * s, 19.5 * s, -10 * s);
+        c.bezierCurveTo(14.5 * s, -20.5 * s, -14.5 * s, -20.5 * s, -19.5 * s, -10 * s);
+        c.closePath();
+        c.fill();
+
+        c.fillStyle = colorCarrotBody;
+        c.beginPath();
+        c.moveTo(-18.5 * s, -9.5 * s);
+        c.bezierCurveTo(-23 * s, 4.5 * s, -13.5 * s, 21.5 * s, 0, 23.5 * s);
+        c.bezierCurveTo(13.5 * s, 21.5 * s, 23 * s, 4.5 * s, 18.5 * s, -9.5 * s);
+        c.bezierCurveTo(13.5 * s, -19 * s, -13.5 * s, -19 * s, -18.5 * s, -9.5 * s);
+        c.closePath();
+        c.fill();
+
+        c.fillStyle = colorCarrotHighlight;
+        c.beginPath();
+        c.ellipse(-5 * s, 2.5 * s, 11 * s, 14 * s, -0.15, 0, Math.PI * 2);
+        c.fill();
+
+        const drawSingleCarrotEye = (eyeCenterX, eyeCenterY, radius) => {
+          c.fillStyle = '#e2e8f0';
+          c.beginPath();
+          c.arc(eyeCenterX, eyeCenterY + 1 * s, radius, 0, Math.PI * 2);
+          c.fill();
+
+          c.fillStyle = '#ffffff';
+          c.beginPath();
+          c.arc(eyeCenterX, eyeCenterY, radius, 0, Math.PI * 2);
+          c.fill();
+
+          const pupilY = eyeCenterY - 2.5 * s;
+          const pupilX = eyeCenterX + (eyeCenterX < 0 ? 0.6 * s : -0.6 * s);
+
+          c.fillStyle = eyePupilDark;
+          c.beginPath();
+          c.arc(pupilX, pupilY, radius * 0.58, 0, Math.PI * 2);
+          c.fill();
+
+          c.fillStyle = eyeAqua;
+          c.beginPath();
+          c.arc(pupilX - 0.5 * s, pupilY - 0.5 * s, radius * 0.4, 0, Math.PI * 2);
+          c.fill();
+
+          c.fillStyle = '#261b12';
+          c.beginPath();
+          c.arc(pupilX, pupilY, radius * 0.22, 0, Math.PI * 2);
+          c.fill();
+
+          c.fillStyle = '#ffffff';
+          c.beginPath();
+          c.arc(pupilX - 1.2 * s, pupilY - 1.2 * s, radius * 0.13, 0, Math.PI * 2);
+          c.fill();
+        };
+
+        const isBlink = (blinkTimer % 180 > 172);
+        if (isBlink) {
+          c.fillStyle = eyePupilDark;
+          c.beginPath();
+          c.roundRect(-15 * s, -7 * s, 13 * s, 2.5 * s, 1.2 * s);
+          c.roundRect(2 * s, -7 * s, 13 * s, 2.5 * s, 1.2 * s);
+          c.fill();
+        } else {
+          drawSingleCarrotEye(-8.5 * s, -6 * s, 8.8 * s);
+          drawSingleCarrotEye(8.5 * s, -6 * s, 8.8 * s);
+        }
+
+        c.fillStyle = '#f43f5e';
+        c.beginPath();
+        c.ellipse(0, 7.5 * s, 3.4 * s, 4.4 * s, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = '#e11d48';
+        c.beginPath();
+        c.ellipse(0, 8.2 * s, 2.4 * s, 3.2 * s, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = 'rgba(244, 114, 182, 0.75)';
+        c.beginPath();
+        c.ellipse(-14 * s, 4.5 * s, 3.8 * s, 2.6 * s, 0, 0, Math.PI * 2);
+        c.ellipse(14 * s, 4.5 * s, 3.8 * s, 2.6 * s, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.restore();
+      },
+
+      drawPoop(c, cx, cy, baseSize, blinkTimer, bounceState = { sx: 1, sy: 1, tilt: 0 }) {
+        c.save();
+        c.translate(cx, cy);
+
+        c.rotate(bounceState.tilt || 0);
+        c.scale(bounceState.sx || 1, bounceState.sy || 1);
+
+        const s = baseSize / 52;
+        const colorBase = '#9a6c42';
+        const colorHighlight = '#b88a5d';
+        const colorDeep = '#84572c';
+        const eyeColor = '#2b1b11';
+
+        c.fillStyle = colorDeep;
+        c.beginPath();
+        c.ellipse(0, 16 * s, 25 * s, 11 * s, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = colorBase;
+        c.beginPath();
+        c.ellipse(0, 14 * s, 24 * s, 10.5 * s, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = colorHighlight;
+        c.beginPath();
+        c.ellipse(-3 * s, 12 * s, 19 * s, 7 * s, -0.05, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = colorDeep;
+        c.beginPath();
+        c.ellipse(0, 2 * s, 19 * s, 9 * s, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = colorBase;
+        c.beginPath();
+        c.ellipse(0, 0, 18.5 * s, 8.5 * s, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = colorHighlight;
+        c.beginPath();
+        c.ellipse(-2 * s, -1 * s, 14 * s, 5.5 * s, -0.06, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = colorBase;
+        c.beginPath();
+        c.moveTo(-13 * s, -5 * s);
+        c.bezierCurveTo(-16 * s, -16 * s, -5 * s, -24 * s, 2 * s, -24 * s);
+        c.bezierCurveTo(12 * s, -24 * s, 14 * s, -14 * s, 13 * s, -5 * s);
+        c.closePath();
+        c.fill();
+
+        c.beginPath();
+        c.moveTo(1 * s, -23 * s);
+        c.quadraticCurveTo(7 * s, -27 * s, 11 * s, -24 * s);
+        c.quadraticCurveTo(6 * s, -21 * s, 4 * s, -18 * s);
+        c.closePath();
+        c.fill();
+
+        c.save();
+        const crownBob = (bounceState.sy > 1) ? -1.5 * s : 0.8 * s;
+        c.translate(-3 * s, (-17 * s) + crownBob);
+        c.rotate(-0.06 + (bounceState.tilt * 0.5 || 0));
+
+        c.fillStyle = '#facc15';
+        c.beginPath();
+        c.moveTo(-5.5 * s, 3 * s);
+        c.lineTo(-6.5 * s, -3.5 * s);
+        c.lineTo(-2 * s, -1 * s);
+        c.lineTo(0, -5.5 * s);
+        c.lineTo(2 * s, -1 * s);
+        c.lineTo(6.5 * s, -3.5 * s);
+        c.lineTo(5.5 * s, 3 * s);
+        c.closePath();
+        c.fill();
+
+        c.fillStyle = '#eab308';
+        c.beginPath();
+        c.moveTo(0, -5.5 * s);
+        c.lineTo(2 * s, -1 * s);
+        c.lineTo(6.5 * s, -3.5 * s);
+        c.lineTo(5.5 * s, 3 * s);
+        c.lineTo(0, 3 * s);
+        c.closePath();
+        c.fill();
+        c.restore();
+
+        const isBlink = (blinkTimer % 180 > 172);
+        if (isBlink) {
+          c.fillStyle = eyeColor;
+          c.fillRect(-9 * s, -1 * s, 3 * s, 1.5 * s);
+          c.fillRect(6 * s, -1 * s, 3 * s, 1.5 * s);
+        } else {
+          c.fillStyle = eyeColor;
+          c.beginPath();
+          c.arc(-7.5 * s, 0, 1.6 * s, 0, Math.PI * 2);
+          c.arc(7.5 * s, 0, 1.6 * s, 0, Math.PI * 2);
+          c.fill();
+        }
+
+        c.fillStyle = 'rgba(244, 114, 182, 0.75)';
+        c.beginPath();
+        c.arc(-11 * s, 2 * s, 2.2 * s, 0, Math.PI * 2);
+        c.arc(11 * s, 2 * s, 2.2 * s, 0, Math.PI * 2);
+        c.fill();
+
+        c.restore();
+      },
+
+      drawCat(c, cx, cy, baseSize, blinkTimer, tailAngle, bounceState = { sx: 1, sy: 1 }) {
+        c.save();
+        c.translate(cx, cy);
+        c.scale(bounceState.sx || 1, bounceState.sy || 1);
+
+        const s = baseSize / 50;
+        c.translate(-24 * s, -22 * s);
+
+        c.strokeStyle = '#fca311';
+        c.lineWidth = 4 * s;
+        c.lineCap = 'round';
+        c.beginPath();
+        c.moveTo(2 * s, 32 * s);
+        const tailOffset = Math.sin(tailAngle) * 8 * s;
+        c.quadraticCurveTo(-15 * s, 22 * s + tailOffset, -8 * s, 9 * s + tailOffset);
+        c.stroke();
+
+        c.fillStyle = '#ff9f1c';
+        c.beginPath();
+        c.roundRect(0, 0, 48 * s, 44 * s, [16 * s, 16 * s, 8 * s, 8 * s]);
+        c.fill();
+
+        c.fillStyle = '#fffdf0';
+        c.beginPath();
+        c.ellipse(26 * s, 28 * s, 12 * s, 10 * s, 0, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = '#f77f00';
+        c.beginPath();
+        c.moveTo(6 * s, 2 * s); c.lineTo(13 * s, -12 * s); c.lineTo(20 * s, 2 * s);
+        c.moveTo(26 * s, 2 * s); c.lineTo(33 * s, -12 * s); c.lineTo(40 * s, 2 * s);
+        c.fill();
+        c.fillStyle = '#ffccd5';
+        c.beginPath();
+        c.moveTo(8 * s, 2 * s); c.lineTo(13 * s, -7 * s); c.lineTo(18 * s, 2 * s);
+        c.moveTo(28 * s, 2 * s); c.lineTo(33 * s, -7 * s); c.lineTo(38 * s, 2 * s);
+        c.fill();
+
+        const isBlink = (blinkTimer % 180 > 170);
+        c.fillStyle = '#0f172a';
+        if (isBlink) {
+          c.fillRect(18 * s, 14 * s, 6 * s, 2 * s);
+          c.fillRect(30 * s, 14 * s, 6 * s, 2 * s);
+        } else {
+          c.beginPath();
+          c.arc(21 * s, 14 * s, 3.5 * s, 0, Math.PI * 2);
+          c.arc(33 * s, 14 * s, 3.5 * s, 0, Math.PI * 2);
+          c.fill();
+          c.fillStyle = '#fff';
+          c.beginPath();
+          c.arc(22 * s, 12.5 * s, 1.2 * s, 0, Math.PI * 2);
+          c.arc(34 * s, 12.5 * s, 1.2 * s, 0, Math.PI * 2);
+          c.fill();
+        }
+
+        c.fillStyle = '#e63946';
+        c.beginPath();
+        c.arc(27 * s, 18 * s, 2 * s, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = 'rgba(255, 90, 95, 0.45)';
+        c.beginPath();
+        c.arc(14 * s, 21 * s, 3.5 * s, 0, Math.PI * 2);
+        c.arc(40 * s, 21 * s, 3.5 * s, 0, Math.PI * 2);
+        c.fill();
+
+        c.fillStyle = '#ffffff';
+        c.beginPath();
+        c.arc(14 * s, 43 * s, 5 * s, 0, Math.PI);
+        c.arc(32 * s, 43 * s, 5 * s, 0, Math.PI);
+        c.fill();
+
+        c.restore();
+      }
+    };
+
+    // ==========================================
+    // 4. 玩家实体对象
+    // ==========================================
+    let score = 0;
+    let selectedSkin = 'carrot';
+    let currentWeather = 'sunny';
+    let weatherSetting = 'auto';
+    let isPlaying = false;
+    let spawnTimer = 0;
+    let platformTimer = 0;
+    let coinTimer = 0;
+
+    function showNotice(text) {
+      const el = document.getElementById('skill-notice');
+      el.textContent = text;
+      el.style.opacity = '1';
+      setTimeout(() => { el.style.opacity = '0'; }, 2200);
+    }
+
+    const player = {
+      x: 60,
+      y: 0,
+      width: 48,
+      height: 44,
+      vy: 0,
+      jumpForce: -13.2,
+      gravity: 0.64,
+      jumpsLeft: 2,
+      maxJumps: 2,
+      hasShield: false,
+      tailAngle: 0,
+      blinkTimer: 0,
+      currentPlatform: null,
+      squishX: 1,
+      squishY: 1,
+      tilt: 0,
+      resetPos() {
+        this.x = Math.max(40, W * 0.14);
+        this.y = GROUND_Y - this.height;
+        this.vy = 0;
+        this.currentPlatform = null;
+        this.squishX = 1;
+        this.squishY = 1;
+        this.tilt = 0;
+      },
+      reset() {
+        this.resetPos();
+        this.jumpsLeft = this.maxJumps;
+        this.hasShield = false;
+        this.updateUI();
+      },
+      updateUI() {
+        document.getElementById('jump-tag').textContent = `🦘 连跳: ${this.jumpsLeft}/${this.maxJumps}`;
+      },
+      jump() {
+        if (this.jumpsLeft > 0) {
+          const isSecondJump = (this.jumpsLeft < this.maxJumps);
+          this.vy = this.jumpForce;
+          this.jumpsLeft--;
+          this.currentPlatform = null;
+
+          this.squishX = 0.82;
+          this.squishY = 1.25;
+
+          Sound.playJump(isSecondJump);
+          createJumpPuff(this.x + this.width / 2, this.y + this.height);
+          this.updateUI();
+        }
+      },
+      update() {
+        this.vy += this.gravity;
+        this.y += this.vy;
+
+        if (!this.currentPlatform && this.y < GROUND_Y - this.height) {
+          if (this.vy < 0) {
+            this.squishX += (0.9 - this.squishX) * 0.15;
+            this.squishY += (1.15 - this.squishY) * 0.15;
+            this.tilt += (-0.05 - this.tilt) * 0.1;
+          } else {
+            this.squishX += (1.08 - this.squishX) * 0.12;
+            this.squishY += (0.92 - this.squishY) * 0.12;
+            this.tilt += (0.04 - this.tilt) * 0.1;
+          }
+        } else {
+          const breath = Math.sin(this.blinkTimer * 0.15) * 0.04;
+          this.squishX += (1 + breath - this.squishX) * 0.18;
+          this.squishY += (1 - breath - this.squishY) * 0.18;
+          this.tilt += (0 - this.tilt) * 0.2;
+        }
+
+        if (this.currentPlatform) {
+          if (this.x + this.width < this.currentPlatform.x || this.x > this.currentPlatform.x + this.currentPlatform.w) {
+            this.currentPlatform = null;
+          } else {
+            this.y = this.currentPlatform.y - this.height;
+            this.vy = 0;
+          }
+        }
+
+        if (this.y >= GROUND_Y - this.height) {
+          if (this.vy > 2) {
+            this.squishX = 1.28;
+            this.squishY = 0.72;
+          }
+          this.y = GROUND_Y - this.height;
+          this.vy = 0;
+          this.currentPlatform = null;
+          if (this.jumpsLeft !== this.maxJumps) {
+            this.jumpsLeft = this.maxJumps;
+            this.updateUI();
+          }
+        }
+
+        this.tailAngle += 0.16;
+        this.blinkTimer++;
+      },
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        if (this.hasShield) {
+          ctx.strokeStyle = '#ffd166';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(this.width / 2, this.height / 2, 33 + Math.sin(this.tailAngle * 2) * 3, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = 'rgba(255, 209, 102, 0.22)';
+          ctx.fill();
+        }
+
+        const cx = this.width / 2;
+        const cy = this.height / 2;
+        const bounceState = { sx: this.squishX, sy: this.squishY, tilt: this.tilt };
+
+        if (selectedSkin === 'cat') {
+          CharacterDrawer.drawCat(ctx, cx, cy, 48, this.blinkTimer, this.tailAngle, bounceState);
+        } else if (selectedSkin === 'poop') {
+          CharacterDrawer.drawPoop(ctx, cx, cy, 48, this.blinkTimer, bounceState);
+        } else {
+          CharacterDrawer.drawCarrot(ctx, cx, cy, 48, this.blinkTimer, bounceState);
+        }
+
+        ctx.restore();
+      }
+    };
+
+    // ==========================================
+    // 5. 空中悬浮平台
+    // ==========================================
+    let platforms = [];
+    class Platform {
+      constructor() {
+        this.w = 90 + Math.random() * 40;
+        this.h = 22;
+        this.x = W + 30;
+        this.y = GROUND_Y - 75 - Math.random() * 55;
+        this.speed = 3.2;
+      }
+      update() {
+        this.x -= this.speed;
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        ctx.fillStyle = currentWeather === 'snowy' ? '#6b7280' : '#5c677d';
+        ctx.beginPath();
+        ctx.roundRect(0, 4, this.w, this.h - 4, [6, 6, 10, 10]);
+        ctx.fill();
+
+        if (currentWeather === 'snowy') {
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.roundRect(0, 0, this.w, 9, [6, 6, 2, 2]);
+          ctx.fill();
+          ctx.fillStyle = '#f1f5f9';
+          ctx.beginPath();
+          ctx.arc(18, 9, 3.5, 0, Math.PI * 2);
+          ctx.arc(this.w - 22, 9, 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = currentWeather === 'rainy' ? '#1b4d3e' : '#2ec4b6';
+          ctx.beginPath();
+          ctx.roundRect(0, 0, this.w, 8, [6, 6, 2, 2]);
+          ctx.fill();
+          ctx.fillStyle = '#208b81';
+          ctx.beginPath();
+          ctx.arc(15, 9, 3, 0, Math.PI * 2);
+          ctx.arc(this.w - 20, 9, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // ==========================================
+    // 6. 怪兽系统
+    // ==========================================
+    let monsters = [];
+    class Monster {
+      constructor(type) {
+        this.type = type;
+        this.wobble = Math.random() * Math.PI * 2;
+
+        if (this.type === 'bird') {
+          this.width = 44;
+          this.height = 36;
+          this.baseY = GROUND_Y - 80 - Math.random() * 50;
+          this.y = this.baseY;
+          this.speed = 4.0 + Math.random() * 1.0;
+          this.color = ['#a06cd5', '#ff758f', '#4ea8de'][Math.floor(Math.random() * 3)];
+          this.wingCycle = 0;
+          this.canStomp = true;
+          this.waveAmplitude = 24 + Math.random() * 10;
+          this.waveSpeed = 0.05 + Math.random() * 0.02;
+        } else if (this.type === 'slime') {
+          this.width = 38;
+          this.height = 34;
+          this.y = GROUND_Y - this.height;
+          this.speed = 3.8 + Math.min(score * 0.08, 3.0);
+          this.color = '#7209b7';
+          this.canStomp = true;
+        } else if (this.type === 'spiky') {
+          this.width = 44;
+          this.height = 36;
+          this.y = GROUND_Y - this.height;
+          this.speed = 3.2 + Math.min(score * 0.06, 2.5);
+          this.color = '#e63946';
+          this.canStomp = false;
+        } else if (this.type === 'golem') {
+          this.width = 56;
+          this.height = 56;
+          this.y = GROUND_Y - this.height;
+          this.speed = 4.2 + Math.min(score * 0.09, 3.2);
+          this.color = '#9d0208';
+          this.canStomp = true;
+        }
+        this.x = W + 40;
+      }
+      update() {
+        this.x -= this.speed;
+
+        if (this.type === 'bird') {
+          this.wobble += this.waveSpeed;
+          this.y = this.baseY + Math.sin(this.wobble) * this.waveAmplitude;
+          this.wingCycle += 0.22;
+        } else {
+          this.wobble += 0.14;
+        }
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        if (this.type === 'bird') {
+          const cx = this.width / 2;
+          const cy = this.height / 2;
+
+          // 头顶呆毛
+          ctx.strokeStyle = '#ffd166';
+          ctx.lineWidth = 2.4;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(cx + 1, 4);
+          ctx.quadraticCurveTo(cx + 6, -8, cx - 1, -10);
+          ctx.moveTo(cx - 3, 5);
+          ctx.quadraticCurveTo(cx - 5, -6, cx - 8, -7);
+          ctx.stroke();
+
+          // 尾羽
+          ctx.fillStyle = '#ffb703';
+          ctx.beginPath();
+          ctx.moveTo(this.width - 4, cy - 2);
+          ctx.lineTo(this.width + 8, cy - 8);
+          ctx.lineTo(this.width + 6, cy + 4);
+          ctx.closePath();
+          ctx.fill();
+
+          // 身体
+          ctx.fillStyle = this.color;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, 18, 15, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 白肚皮
+          ctx.fillStyle = '#fffdf0';
+          ctx.beginPath();
+          ctx.ellipse(cx - 2, cy + 4, 11, 8, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 鸟嘴
+          ctx.fillStyle = '#fb8500';
+          ctx.beginPath();
+          ctx.moveTo(cx - 15, cy - 3);
+          ctx.lineTo(cx - 25, cy + 1);
+          ctx.lineTo(cx - 14, cy + 5);
+          ctx.closePath();
+          ctx.fill();
+
+          // 翅膀扇动
+          const wingY = Math.sin(this.wingCycle) * 7;
+          ctx.fillStyle = '#f72585';
+          ctx.beginPath();
+          ctx.ellipse(cx + 4, cy + wingY, 9, 6, 0.2, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 眼神
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(cx - 7, cy - 4, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(cx - 9, cy - 4, 2.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(cx - 10, cy - 5, 1, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#334155';
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(cx - 13, cy - 10);
+          ctx.lineTo(cx - 4, cy - 8);
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(255, 117, 143, 0.6)';
+          ctx.beginPath();
+          ctx.arc(cx - 4, cy + 3, 3, 0, Math.PI * 2);
+          ctx.fill();
+
+        } else if (this.type === 'spiky') {
+          ctx.fillStyle = '#d90429';
+          for (let i = 6; i < this.width - 6; i += 9) {
+            ctx.beginPath();
+            ctx.moveTo(i, 2);
+            ctx.lineTo(i + 4.5, -12);
+            ctx.lineTo(i + 9, 2);
+            ctx.fill();
+          }
+          ctx.fillStyle = '#6c757d';
+          ctx.beginPath();
+          ctx.roundRect(0, 0, this.width, this.height, [14, 14, 6, 6]);
+          ctx.fill();
+
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(this.width / 2 - 4, this.height * 0.45, 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(this.width / 2 - 6, this.height * 0.45, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+
+        } else {
+          const squish = Math.sin(this.wobble) * 2.5;
+
+          ctx.fillStyle = '#ffd166';
+          ctx.beginPath();
+          ctx.moveTo(this.width * 0.25, 0); ctx.lineTo(this.width * 0.15, -10); ctx.lineTo(this.width * 0.4, 2);
+          ctx.moveTo(this.width * 0.75, 0); ctx.lineTo(this.width * 0.85, -10); ctx.lineTo(this.width * 0.6, 2);
+          ctx.fill();
+
+          ctx.fillStyle = this.color;
+          ctx.beginPath();
+          ctx.roundRect(0, squish, this.width, this.height - squish, [16, 16, 8, 8]);
+          ctx.fill();
+
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(this.width / 2 - 2, this.height * 0.45, this.type === 'golem' ? 12 : 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(this.width / 2 - 4, this.height * 0.45, this.type === 'golem' ? 6 : 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.moveTo(this.width * 0.4, this.height * 0.76);
+          ctx.lineTo(this.width * 0.5, this.height * 0.88);
+          ctx.lineTo(this.width * 0.6, this.height * 0.76);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // ==========================================
+    // 7. 掉落道具与通用特效
+    // ==========================================
+    let items = [];
+    class Item {
+      constructor() {
+        this.x = W + 20;
+        this.y = GROUND_Y - 50 - Math.random() * 85;
+        this.radius = 12;
+        this.isShield = Math.random() > 0.75;
+        this.speed = 3.5;
+        this.angle = 0;
+      }
+      update() {
+        this.x -= this.speed;
+        this.angle += 0.08;
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y + Math.sin(this.angle) * 5);
+        if (this.isShield) {
+          ctx.fillStyle = '#48cae4';
+          ctx.beginPath();
+          ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = '#fff';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('🛡️', 0, 4);
+        } else {
+          ctx.fillStyle = '#ffd166';
+          ctx.beginPath();
+          ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#f77f00';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+          ctx.fillStyle = '#b76902';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('★', 0, 4);
+        }
+        ctx.restore();
+      }
+    }
+
+    let particles = [];
+    function createBurst(x, y, color) {
+      for (let i = 0; i < 16; i++) {
+        particles.push({
+          x, y,
+          vx: (Math.random() - 0.5) * 8,
+          vy: (Math.random() - 0.7) * 8,
+          radius: Math.random() * 5 + 2,
+          color,
+          alpha: 1
+        });
+      }
+    }
+    function createJumpPuff(x, y) {
+      const isCarrot = selectedSkin === 'carrot';
+      const isPoop = selectedSkin === 'poop';
+      for (let i = 0; i < 7; i++) {
+        let pColor = currentWeather === 'snowy' ? '#ffffff' : 'rgba(255,255,255,0.7)';
+        if (isCarrot) {
+          pColor = Math.random() > 0.5 ? '#84cc16' : '#f97316';
+        } else if (isPoop) {
+          pColor = Math.random() > 0.5 ? '#ffd166' : '#d4a373';
+        }
+        particles.push({
+          x: x + (Math.random() - 0.5) * 16,
+          y: y - 2,
+          vx: (Math.random() - 0.5) * 3.5,
+          vy: Math.random() * -2.5,
+          radius: Math.random() * 4 + 2,
+          color: pColor,
+          alpha: 0.85
+        });
+      }
+    }
+
+    // ==========================================
+    // 8. 天气系统与粒子
+    // ==========================================
+    let raindrops = [];
+    let snowflakes = [];
+    let ripples = [];
+    let sunAngle = 0;
+
+    function initWeatherParticles() {
+      raindrops = [];
+      for (let i = 0; i < 90; i++) {
+        raindrops.push({
+          x: Math.random() * (W + 200),
+          y: Math.random() * H,
+          len: 12 + Math.random() * 12,
+          speed: 11 + Math.random() * 5
+        });
+      }
+
+      snowflakes = [];
+      for (let i = 0; i < 70; i++) {
+        snowflakes.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          radius: 1.5 + Math.random() * 3.5,
+          speed: 1.2 + Math.random() * 1.8,
+          sway: Math.random() * Math.PI * 2,
+          swaySpeed: 0.03 + Math.random() * 0.03
+        });
+      }
+      ripples = [];
+    }
+
+    function drawSun() {
+      sunAngle += 0.01;
+      const sx = W - 75;
+      const sy = 65;
+
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(sunAngle);
+
+      ctx.strokeStyle = '#fcd34d';
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 8; i++) {
+        ctx.rotate(Math.PI / 4);
+        ctx.beginPath();
+        ctx.moveTo(25, 0);
+        ctx.lineTo(34, 0);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(0, 0, 22, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.arc(-6, -2, 2.5, 0, Math.PI * 2);
+      ctx.arc(6, -2, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, 4, 4, 0, Math.PI);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function updateAndDrawRain() {
+      ctx.strokeStyle = 'rgba(200, 230, 255, 0.7)';
+      ctx.lineWidth = 1.6;
+      ctx.lineCap = 'round';
+
+      raindrops.forEach(r => {
+        r.x -= 3.5;
+        r.y += r.speed;
+
+        ctx.beginPath();
+        ctx.moveTo(r.x, r.y);
+        ctx.lineTo(r.x - 5, r.y + r.len);
+        ctx.stroke();
+
+        if (r.y >= GROUND_Y) {
+          if (Math.random() > 0.6) {
+            ripples.push({
+              x: r.x,
+              y: GROUND_Y + Math.random() * 8,
+              radius: 1,
+              maxRadius: 6 + Math.random() * 6,
+              alpha: 0.8
+            });
+          }
+          r.y = -20;
+          r.x = Math.random() * (W + 200);
+        }
+      });
+
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const rp = ripples[i];
+        rp.radius += 0.5;
+        rp.alpha -= 0.05;
+
+        if (rp.alpha <= 0 || rp.radius >= rp.maxRadius) {
+          ripples.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.strokeStyle = `rgba(224, 242, 254, ${rp.alpha})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.ellipse(rp.x, rp.y, rp.radius * 1.5, rp.radius * 0.6, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function updateAndDrawSnow() {
+      ctx.fillStyle = '#ffffff';
+      snowflakes.forEach(s => {
+        s.sway += s.swaySpeed;
+        s.x += Math.sin(s.sway) * 0.8 - 0.5;
+        s.y += s.speed;
+
+        if (s.y > H) {
+          s.y = -10;
+          s.x = Math.random() * W;
+        }
+
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    // ==========================================
+    // 9. 自然地貌与背景系统
+    // ==========================================
+    let clouds = [];
+    let birds = [];
+    let undergroundDecor = [];
+    let scenery = [];
+
+    function initSky() {
+      clouds = [];
+      for (let i = 0; i < 5; i++) {
+        clouds.push({
+          x: Math.random() * W,
+          y: 35 + Math.random() * (GROUND_Y * 0.42),
+          scale: 0.85 + Math.random() * 0.45,
+          speed: 0.22 + Math.random() * 0.28,
+          opacity: 0.82 + Math.random() * 0.15
+        });
+      }
+
+      birds = [];
+      const birdColors = ['#ffccd5', '#90e0ef', '#ffe6a7'];
+      for (let i = 0; i < 3; i++) {
+        birds.push({
+          x: Math.random() * W,
+          y: 35 + Math.random() * (GROUND_Y * 0.35),
+          speed: 1.3 + Math.random() * 0.6,
+          wingSpeed: 0.16 + Math.random() * 0.06,
+          wingAngle: Math.random() * Math.PI,
+          floatOffset: Math.random() * Math.PI * 2,
+          color: birdColors[i % birdColors.length],
+          size: 10 + Math.random() * 2.5
+        });
+      }
+    }
+
+    function drawCloud(c) {
+      ctx.save();
+      ctx.translate(c.x, c.y);
+      ctx.scale(c.scale, c.scale);
+
+      let mainColor = `rgba(255, 255, 255, ${c.opacity})`;
+      let shadowColor = `rgba(214, 234, 248, ${c.opacity * 0.6})`;
+      if (currentWeather === 'rainy') {
+        mainColor = `rgba(160, 174, 192, ${c.opacity * 0.95})`;
+        shadowColor = `rgba(100, 116, 139, 0.5)`;
+      }
+
+      ctx.fillStyle = shadowColor;
+      ctx.beginPath();
+      ctx.roundRect(-42, 6, 84, 16, [10, 10, 14, 14]);
+      ctx.fill();
+
+      ctx.fillStyle = mainColor;
+      ctx.beginPath();
+      ctx.arc(0, -6, 23, 0, Math.PI * 2);
+      ctx.arc(-22, 0, 18, 0, Math.PI * 2);
+      ctx.arc(22, 0, 18, 0, Math.PI * 2);
+      ctx.arc(-35, 6, 12, 0, Math.PI * 2);
+      ctx.arc(35, 6, 12, 0, Math.PI * 2);
+      ctx.arc(0, 7, 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawCuteBird(b) {
+      ctx.save();
+      const floatY = Math.sin(b.floatOffset) * 4;
+      ctx.translate(b.x, b.y + floatY);
+
+      ctx.fillStyle = '#f77f00';
+      ctx.beginPath();
+      ctx.moveTo(b.size * 0.8, 0); ctx.lineTo(b.size * 1.4, -3); ctx.lineTo(b.size * 1.2, 3);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = b.color;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, b.size, b.size * 0.88, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(-b.size * 0.1, b.size * 0.25, b.size * 0.65, b.size * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      const wingY = Math.sin(b.wingAngle) * (b.size * 0.8);
+      ctx.fillStyle = '#ff85a1';
+      ctx.beginPath();
+      ctx.ellipse(b.size * 0.1, wingY, b.size * 0.55, b.size * 0.35, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.arc(-b.size * 0.45, -b.size * 0.22, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffb703';
+      ctx.beginPath();
+      ctx.moveTo(-b.size * 0.78, -b.size * 0.2);
+      ctx.lineTo(-b.size * 1.25, -b.size * 0.05);
+      ctx.lineTo(-b.size * 0.78, b.size * 0.1);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function initEnvironment() {
+      initSky();
+      initWeatherParticles();
+
+      undergroundDecor = [];
+      const types = ['fossil', 'gem', 'rock'];
+      for (let i = 0; i < 14; i++) {
+        undergroundDecor.push({
+          x: Math.random() * W,
+          y: GROUND_Y + 28 + Math.random() * (H - GROUND_Y - 50),
+          type: types[i % types.length],
+          size: 8 + Math.random() * 10
+        });
+      }
+
+      scenery = [];
+      for (let i = 0; i < 10; i++) {
+        scenery.push({
+          x: (W / 8) * i,
+          type: ['tree', 'mushroom', 'stone', 'grass'][i % 4],
+          scale: 0.75 + Math.random() * 0.4,
+          speed: 1.2
+        });
+      }
+    }
+
+    function drawUnderground() {
+      const dirtGrad = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+      dirtGrad.addColorStop(0, '#582f0e');
+      dirtGrad.addColorStop(0.3, '#43281c');
+      dirtGrad.addColorStop(1, '#2c1810');
+      ctx.fillStyle = dirtGrad;
+      ctx.fillRect(0, GROUND_Y + 16, W, H - (GROUND_Y + 16));
+
+      if (currentWeather === 'snowy') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, GROUND_Y, W, 16);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(0, GROUND_Y + 14, W, 4);
+      } else if (currentWeather === 'rainy') {
+        ctx.fillStyle = '#1e5128';
+        ctx.fillRect(0, GROUND_Y, W, 16);
+        ctx.fillStyle = '#2d6a4f';
+        ctx.fillRect(0, GROUND_Y + 14, W, 4);
+      } else {
+        ctx.fillStyle = '#38b000';
+        ctx.fillRect(0, GROUND_Y, W, 16);
+        ctx.fillStyle = '#70e000';
+        ctx.fillRect(0, GROUND_Y, W, 4);
+      }
+
+      undergroundDecor.forEach(d => {
+        d.x -= 1.2;
+        if (d.x < -30) d.x = W + 30;
+
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        if (d.type === 'fossil') {
+          ctx.strokeStyle = '#e9ecef';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(-10, 0); ctx.lineTo(10, 0);
+          ctx.moveTo(-4, -6); ctx.lineTo(-4, 6);
+          ctx.moveTo(2, -5); ctx.lineTo(2, 5);
+          ctx.stroke();
+          ctx.fillStyle = '#e9ecef';
+          ctx.beginPath();
+          ctx.arc(12, 0, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (d.type === 'gem') {
+          ctx.fillStyle = '#b5179e';
+          ctx.beginPath();
+          ctx.moveTo(0, -d.size); ctx.lineTo(d.size * 0.8, 0); ctx.lineTo(0, d.size); ctx.lineTo(-d.size * 0.8, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = '#f72585';
+          ctx.beginPath();
+          ctx.moveTo(0, -d.size); ctx.lineTo(d.size * 0.4, 0); ctx.lineTo(0, d.size);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#6c757d';
+          ctx.beginPath();
+          ctx.roundRect(-8, -6, 16, 12, 4);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+    }
+
+    function drawBackground() {
+      let topColor = '#38bdf8', botColor = '#dbeafe';
+      if (currentWeather === 'rainy') {
+        topColor = '#475569'; botColor = '#94a3b8';
+      } else if (currentWeather === 'snowy') {
+        topColor = '#93c5fd'; botColor = '#f0f9ff';
+      }
+
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+      skyGrad.addColorStop(0, topColor);
+      skyGrad.addColorStop(1, botColor);
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, GROUND_Y);
+
+      if (currentWeather === 'sunny') {
+        drawSun();
+      }
+
+      clouds.forEach(c => {
+        c.x -= c.speed;
+        if (c.x < -120) c.x = W + 100;
+        drawCloud(c);
+      });
+
+      if (currentWeather !== 'rainy') {
+        birds.forEach(b => {
+          b.x -= b.speed;
+          b.wingAngle += b.wingSpeed;
+          b.floatOffset += 0.04;
+          if (b.x < -50) {
+            b.x = W + 60 + Math.random() * 40;
+            b.y = 35 + Math.random() * (GROUND_Y * 0.35);
+          }
+          drawCuteBird(b);
+        });
+      }
+
+      scenery.forEach(item => {
+        item.x -= item.speed;
+        if (item.x < -80) {
+          item.x = W + 60 + Math.random() * 60;
+          item.type = ['tree', 'mushroom', 'stone', 'grass'][Math.floor(Math.random() * 4)];
+          item.scale = 0.75 + Math.random() * 0.4;
+        }
+
+        ctx.save();
+        ctx.translate(item.x, GROUND_Y);
+        ctx.scale(item.scale, item.scale);
+
+        if (item.type === 'tree') {
+          ctx.fillStyle = '#78461f';
+          ctx.beginPath();
+          ctx.moveTo(-9, 0);
+          ctx.quadraticCurveTo(-5, -20, -5, -40);
+          ctx.lineTo(5, -40);
+          ctx.quadraticCurveTo(5, -20, 9, 0);
+          ctx.closePath();
+          ctx.fill();
+
+          let leafBaseColor = '#22c55e';
+          let leafShadowColor = '#15803d';
+          let leafHighlight = '#4ade80';
+
+          if (currentWeather === 'snowy') {
+            leafBaseColor = '#164e63';
+            leafShadowColor = '#0e3a4b';
+            leafHighlight = '#22d3ee';
+          } else if (currentWeather === 'rainy') {
+            leafBaseColor = '#166534';
+            leafShadowColor = '#14532d';
+            leafHighlight = '#15803d';
+          }
+
+          ctx.fillStyle = leafShadowColor;
+          ctx.beginPath();
+          ctx.arc(0, -48, 22, 0, Math.PI * 2);
+          ctx.arc(-16, -42, 17, 0, Math.PI * 2);
+          ctx.arc(16, -42, 17, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = leafBaseColor;
+          ctx.beginPath();
+          ctx.arc(0, -56, 21, 0, Math.PI * 2);
+          ctx.arc(-13, -46, 17, 0, Math.PI * 2);
+          ctx.arc(13, -46, 17, 0, Math.PI * 2);
+          ctx.arc(0, -40, 16, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = leafHighlight;
+          ctx.beginPath();
+          ctx.arc(-4, -62, 11, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (currentWeather === 'snowy') {
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, -68, 12, 0, Math.PI * 2);
+            ctx.arc(-12, -58, 10, 0, Math.PI * 2);
+            ctx.arc(12, -58, 10, 0, Math.PI * 2);
+            ctx.arc(0, -54, 8, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+        } else if (item.type === 'mushroom') {
+          ctx.fillStyle = '#ffedd5';
+          ctx.beginPath();
+          ctx.roundRect(-4, -16, 8, 16, [2, 2, 4, 4]);
+          ctx.fill();
+
+          ctx.fillStyle = '#ef233c';
+          ctx.beginPath();
+          ctx.arc(0, -16, 16, Math.PI, 0);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(-6, -22, 2.5, 0, Math.PI * 2);
+          ctx.arc(5, -20, 3, 0, Math.PI * 2);
+          ctx.fill();
+
+        } else if (item.type === 'stone') {
+          ctx.fillStyle = '#94a3b8';
+          ctx.beginPath();
+          ctx.roundRect(-16, -16, 32, 18, [12, 14, 2, 2]);
+          ctx.fill();
+          if (currentWeather === 'snowy') {
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(-12, -18, 24, 6, 3);
+            ctx.fill();
+          }
+
+        } else {
+          ctx.fillStyle = currentWeather === 'snowy' ? '#cbd5e1' : (currentWeather === 'rainy' ? '#1e5128' : '#52b788');
+          ctx.beginPath();
+          ctx.moveTo(-10, 0); ctx.lineTo(-6, -16); ctx.lineTo(-2, 0);
+          ctx.moveTo(-2, 0); ctx.lineTo(2, -20); ctx.lineTo(6, 0);
+          ctx.moveTo(4, 0); ctx.lineTo(9, -14); ctx.lineTo(13, 0);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+
+      drawUnderground();
+    }
+
+    // ==========================================
+    // 10. 游戏核心循环
+    // ==========================================
+    function updateGame() {
+      if (!isPlaying) return;
+
+      player.update();
+
+      if (weatherSetting === 'auto') {
+        if (score < 25 && currentWeather !== 'sunny') {
+          currentWeather = 'sunny';
+          document.getElementById('diff-tag').textContent = '☀️ 晴空暖阳';
+        } else if (score >= 25 && score < 60 && currentWeather !== 'rainy') {
+          currentWeather = 'rainy';
+          document.getElementById('diff-tag').textContent = '🌧️ 细雨蒙蒙';
+          showNotice('🌧️ 天空阴沉，淅淅沥沥下起小雨啦！');
+        } else if (score >= 60 && currentWeather !== 'snowy') {
+          currentWeather = 'snowy';
+          document.getElementById('diff-tag').textContent = '❄️ 冰雪世界';
+          showNotice('❄️ 漫天飘雪，整座森林白雪皑皑！');
+        }
+      }
+
+      platformTimer++;
+      if (platformTimer > 170) {
+        platforms.push(new Platform());
+        platformTimer = 0;
+      }
+      for (let i = platforms.length - 1; i >= 0; i--) {
+        const p = platforms[i];
+        p.update();
+        if (p.x + p.w < 0) { platforms.splice(i, 1); continue; }
+
+        const playerBottom = player.y + player.height;
+        const inPlatformX = (player.x + player.width * 0.7 > p.x) && (player.x + player.width * 0.3 < p.x + p.w);
+        if (player.vy >= 0 && inPlatformX && playerBottom >= p.y && playerBottom <= p.y + player.vy + 7) {
+          player.y = p.y - player.height;
+          player.vy = 0;
+          player.currentPlatform = p;
+          if (player.jumpsLeft !== player.maxJumps) {
+            player.jumpsLeft = player.maxJumps;
+            player.updateUI();
+          }
+          Sound.playLand();
+        }
+      }
+
+      coinTimer++;
+      if (coinTimer > 180) {
+        items.push(new Item());
+        coinTimer = 0;
+      }
+      for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+        item.update();
+        if (item.x < -30) { items.splice(i, 1); continue; }
+
+        const dist = Math.hypot((player.x + player.width / 2) - item.x, (player.y + player.height / 2) - item.y);
+        if (dist < player.width / 2 + item.radius) {
+          Sound.playCoin();
+          if (item.isShield) {
+            player.hasShield = true;
+            showNotice('🛡️ 护盾激活！抵挡一次正面伤害！');
+          } else {
+            score += 3;
+            document.getElementById('score-tag').textContent = `🐾 得分: ${score}`;
+            showNotice('⭐ 金币 +3分！');
+          }
+          createBurst(item.x, item.y, '#ffd166');
+          items.splice(i, 1);
+        }
+      }
+
+      spawnTimer++;
+      const spawnInterval = Math.max(55, 120 - Math.floor(score * 1.5));
+      if (spawnTimer > spawnInterval) {
+        let type = 'slime';
+        const rand = Math.random();
+        if (score < 25) {
+          type = rand > 0.4 ? 'slime' : 'bird';
+        } else if (score < 60) {
+          type = rand > 0.6 ? 'spiky' : (rand > 0.3 ? 'bird' : 'slime');
+        } else {
+          type = rand > 0.7 ? 'golem' : (rand > 0.45 ? 'spiky' : (rand > 0.2 ? 'bird' : 'slime'));
+        }
+        monsters.push(new Monster(type));
+        spawnTimer = 0;
+      }
+
+      for (let i = monsters.length - 1; i >= 0; i--) {
+        const m = monsters[i];
+        m.update();
+
+        if (m.x + m.width < 0) {
+          monsters.splice(i, 1);
+          score += 1;
+          document.getElementById('score-tag').textContent = `🐾 得分: ${score}`;
+          continue;
+        }
+
+        const hitX = player.x < m.x + m.width && player.x + player.width > m.x;
+        const hitY = player.y < m.y + m.height && player.y + player.height > m.y;
+
+        if (hitX && hitY) {
+          const playerBottom = player.y + player.height;
+          const monsterTop = m.y + 14;
+
+          if (m.canStomp && player.vy > 0 && playerBottom <= monsterTop + player.vy + 7) {
+            Sound.playStomp();
+            createBurst(m.x + m.width / 2, m.y + m.height / 2, m.color);
+            monsters.splice(i, 1);
+            player.vy = player.jumpForce * 0.9;
+            score += 2;
+            document.getElementById('score-tag').textContent = `🐾 得分: ${score}`;
+          } else {
+            if (player.hasShield) {
+              Sound.playHit();
+              player.hasShield = false;
+              createBurst(player.x + player.width / 2, player.y + player.height / 2, '#48cae4');
+              monsters.splice(i, 1);
+              showNotice('💔 护盾碎裂！');
+            } else {
+              Sound.playHit();
+              triggerGameOver();
+              break;
+            }
+          }
+        }
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.28;
+        p.alpha -= 0.035;
+        if (p.alpha <= 0) particles.splice(i, 1);
+      }
+    }
+
+    // ==========================================
+    // 11. 换肤预览
+    // ==========================================
+    let previewTimer = 0;
+    const previewCanvas = document.getElementById('previewCanvas');
+    const pctx = previewCanvas.getContext('2d');
+    const carrotThumbCanvas = document.getElementById('carrotThumbCanvas');
+    const crctx = carrotThumbCanvas.getContext('2d');
+    const poopThumbCanvas = document.getElementById('poopThumbCanvas');
+    const poctx = poopThumbCanvas.getContext('2d');
+    const catThumbCanvas = document.getElementById('catThumbCanvas');
+    const cctx = catThumbCanvas.getContext('2d');
+
+    function renderSkinPreviews() {
+      previewTimer += 1.5;
+
+      crctx.clearRect(0, 0, 40, 40);
+      CharacterDrawer.drawCarrot(crctx, 20, 21, 31, previewTimer);
+
+      poctx.clearRect(0, 0, 40, 40);
+      CharacterDrawer.drawPoop(poctx, 20, 20, 31, previewTimer);
+
+      cctx.clearRect(0, 0, 40, 40);
+      CharacterDrawer.drawCat(cctx, 20, 20, 30, previewTimer, previewTimer * 0.08);
+
+      pctx.clearRect(0, 0, 180, 185);
+      const floatOffset = Math.sin(previewTimer * 0.05) * 3;
+      const previewSquish = Math.sin(previewTimer * 0.08) * 0.035;
+      const previewBounce = { sx: 1 + previewSquish, sy: 1 - previewSquish, tilt: 0 };
+
+      if (selectedSkin === 'carrot') {
+        CharacterDrawer.drawCarrot(pctx, 90, 88 + floatOffset, 102, previewTimer, previewBounce);
+      } else if (selectedSkin === 'poop') {
+        CharacterDrawer.drawPoop(pctx, 90, 90 + floatOffset, 105, previewTimer, previewBounce);
+      } else {
+        CharacterDrawer.drawCat(pctx, 90, 88 + floatOffset, 96, previewTimer, previewTimer * 0.08, previewBounce);
+      }
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, W, H);
+
+      drawBackground();
+
+      if (currentWeather === 'rainy') {
+        updateAndDrawRain();
+      } else if (currentWeather === 'snowy') {
+        updateAndDrawSnow();
+      }
+
+      platforms.forEach(p => p.draw());
+      items.forEach(it => it.draw());
+      monsters.forEach(m => m.draw());
+      player.draw();
+
+      particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      updateGame();
+      renderSkinPreviews();
+
+      requestAnimationFrame(render);
+    }
+
+    // ==========================================
+    // 12. 交互控制与真实排行榜更新
+    // ==========================================
+    const menuScreen = document.getElementById('menu-screen');
+    const skinScreen = document.getElementById('skin-screen');
+    const settingScreen = document.getElementById('setting-screen');
+    const rankScreen = document.getElementById('rank-screen');
+    const loginScreen = document.getElementById('login-screen');
+    const gameoverScreen = document.getElementById('gameover-screen');
+    const mainTitle = document.getElementById('main-title');
+
+    function updateTitle() {
+      if (selectedSkin === 'carrot') {
+        mainTitle.textContent = '呆萌萝卜大冒险';
+      } else if (selectedSkin === 'poop') {
+        mainTitle.textContent = '便便国王大冒险';
+      } else {
+        mainTitle.textContent = '小猫大冒险';
+      }
+    }
+
+    // 渲染全网真实排行榜
+    async function renderRealLeaderboard() {
+      const container = document.getElementById('rank-list-container');
+      const statusTag = document.getElementById('rank-sync-tag');
+      const myId = RealOnlineRank.getPlayerId();
+      const myName = RealOnlineRank.getPlayerName();
+
+      statusTag.textContent = '🔄 正在连接云端获取真实玩家数据...';
+      statusTag.style.color = '#d97706';
+
+      // 获取纯真实玩家数据
+      const list = await RealOnlineRank.getOnlineList();
+
+      statusTag.textContent = '🟢 实时同步完成 (已连接公共云数据库)';
+      statusTag.style.color = '#16a34a';
+
+      container.innerHTML = '';
+
+      if (list.length === 0) {
+        container.innerHTML = '<div class="rank-empty-state">🍃 暂无真实玩家上榜，快去拿下全服首个得分！</div>';
+      } else {
+        list.forEach((item, index) => {
+          const isMe = (item.id === myId);
+          const div = document.createElement('div');
+          div.className = `rank-item ${isMe ? 'is-me' : ''}`;
+
+          let posClass = '';
+          if (index === 0) posClass = 'top-1';
+          else if (index === 1) posClass = 'top-2';
+          else if (index === 2) posClass = 'top-3';
+
+          div.innerHTML = `
+            <div class="rank-left">
+              <div class="rank-pos ${posClass}">${index + 1}</div>
+              <div class="rank-name">${item.name} ${isMe ? ' (我)' : ''}</div>
+            </div>
+            <div class="rank-score">${item.score} 分</div>
+          `;
+          container.appendChild(div);
+        });
+      }
+
+      document.getElementById('my-best-record').textContent = `玩家 [${myName}] 历史最高分：${RealOnlineRank.getMyBest()} 分`;
+    }
+
+    function startGame() {
+      Sound.init();
+      Sound.startBGM();
+      score = 0;
+      if (weatherSetting === 'auto') {
+        currentWeather = 'sunny';
+        document.getElementById('diff-tag').textContent = '☀️ 晴空暖阳';
+      } else {
+        currentWeather = weatherSetting;
+        updateWeatherTag(currentWeather);
+      }
+
+      monsters = [];
+      items = [];
+      platforms = [];
+      particles = [];
+      player.reset();
+      document.getElementById('score-tag').textContent = '🐾 得分: 0';
+      menuScreen.classList.add('hidden');
+      gameoverScreen.classList.add('hidden');
+      settingScreen.classList.add('hidden');
+      skinScreen.classList.add('hidden');
+      rankScreen.classList.add('hidden');
+      loginScreen.classList.add('hidden');
+      isPlaying = true;
+    }
+
+    function updateWeatherTag(w) {
+      if (w === 'sunny') document.getElementById('diff-tag').textContent = '☀️ 晴空暖阳';
+      if (w === 'rainy') document.getElementById('diff-tag').textContent = '🌧️ 细雨蒙蒙';
+      if (w === 'snowy') document.getElementById('diff-tag').textContent = '❄️ 冰雪世界';
+    }
+
+    // 游戏结束自动上传真实数据并同步至公网
+    async function triggerGameOver() {
+      isPlaying = false;
+      document.getElementById('final-score').textContent = `本次冒险最终得分: ${score} 分 (历史最高: ${Math.max(score, RealOnlineRank.getMyBest())} 分)`;
+      gameoverScreen.classList.remove('hidden');
+
+      // 实时上传真实分数至云端
+      await RealOnlineRank.uploadScore(score);
+    }
+
+    window.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select') || e.target.closest('.skin-card') || e.target.closest('.user-profile-badge')) return;
+      if (isPlaying) {
+        player.jump();
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if ((e.code === 'Space' || e.code === 'ArrowUp') && isPlaying) {
+        e.preventDefault();
+        player.jump();
+      }
+    });
+
+    document.getElementById('btn-start-game').addEventListener('click', startGame);
+    document.getElementById('btn-restart').addEventListener('click', startGame);
+
+    document.getElementById('btn-back-menu').addEventListener('click', () => {
+      gameoverScreen.classList.add('hidden');
+      menuScreen.classList.remove('hidden');
+    });
+
+    // 专属账号与昵称设置
+    document.getElementById('btn-user-badge').addEventListener('click', () => {
+      document.getElementById('username-input').value = RealOnlineRank.getPlayerName();
+      loginScreen.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-save-username').addEventListener('click', () => {
+      const name = document.getElementById('username-input').value;
+      RealOnlineRank.setPlayerName(name);
+      loginScreen.classList.add('hidden');
+    });
+
+    // 真实英雄排行榜点击
+    document.getElementById('btn-open-rank').addEventListener('click', () => {
+      rankScreen.classList.remove('hidden');
+      renderRealLeaderboard();
+    });
+
+    document.getElementById('btn-close-rank').addEventListener('click', () => {
+      rankScreen.classList.add('hidden');
+    });
+
+    // 换肤面板
+    document.getElementById('btn-open-skin').addEventListener('click', () => {
+      skinScreen.classList.remove('hidden');
+    });
+
+    document.querySelectorAll('.skin-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.skin-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        selectedSkin = card.getAttribute('data-skin');
+        updateTitle();
+      });
+    });
+
+    document.getElementById('btn-close-skin').addEventListener('click', () => {
+      skinScreen.classList.add('hidden');
+    });
+
+    // 游戏设置
+    document.getElementById('btn-open-setting').addEventListener('click', () => {
+      Sound.init();
+      settingScreen.classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-setting').addEventListener('click', () => {
+      settingScreen.classList.add('hidden');
+    });
+
+    document.getElementById('btn-quit-game').addEventListener('click', () => {
+      alert('已退出冒险！随时欢迎回来~');
+      Sound.stopBGM();
+      window.location.reload();
+    });
+
+    document.getElementById('weather-mode').addEventListener('change', (e) => {
+      weatherSetting = e.target.value;
+      if (weatherSetting !== 'auto') {
+        currentWeather = weatherSetting;
+        updateWeatherTag(currentWeather);
+      }
+    });
+
+    document.getElementById('toggle-bgm').addEventListener('change', (e) => {
+      Sound.bgmEnabled = e.target.checked;
+      if (!Sound.bgmEnabled) Sound.stopBGM();
+      else if (isPlaying) Sound.startBGM();
+    });
+    document.getElementById('toggle-sfx').addEventListener('change', (e) => {
+      Sound.sfxEnabled = e.target.checked;
+    });
+    document.getElementById('jump-sfx-style').addEventListener('change', (e) => {
+      Sound.jumpStyle = e.target.value;
+    });
+
+    window.addEventListener('resize', () => {
+      resize();
+      initEnvironment();
+    });
+
+    // 启动初始化
+    resize();
+    initEnvironment();
+    document.getElementById('display-username').textContent = RealOnlineRank.getPlayerName();
+    updateTitle();
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
